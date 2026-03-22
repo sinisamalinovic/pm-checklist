@@ -1,58 +1,51 @@
 @using PosmatraciApp.Models
 
 <div class="checklist-item @GetStateClass()">
+
     <div class="item-text">
         <MudText Typo="Typo.body2">@Item.Text</MudText>
     </div>
 
-    <div class="item-controls">
-        <MudIconButton Icon="@Icons.Material.Filled.CheckCircle"
-                       Color="@(Answer == AnswerState.Da ? Color.Success : Color.Default)"
-                       Size="Size.Medium"
-                       OnClick="@(() => ToggleAnswer(AnswerState.Da))"
-                       Style="min-width:44px;min-height:44px;" />
-
-        <MudIconButton Icon="@Icons.Material.Filled.Cancel"
-                       Color="@(Answer == AnswerState.Ne ? Color.Error : Color.Default)"
-                       Size="Size.Medium"
-                       OnClick="@(() => ToggleAnswer(AnswerState.Ne))"
-                       Style="min-width:44px;min-height:44px;" />
-
-        <MudText Typo="Typo.caption" Style="line-height:44px;color:#999;padding-left:4px;">
-            @GetAnswerLabel()
-        </MudText>
-    </div>
-
-    @if (Answer == AnswerState.Ne)
-    {
-        <div class="item-severity">
-            @foreach (var sev in new[] { CheckSeverity.N, CheckSeverity.S, CheckSeverity.V, CheckSeverity.K })
-            {
-                <MudChip T="string"
-                         Color="@GetSeverityColor(sev)"
-                         Variant="@(CurrentSeverity == sev ? Variant.Filled : Variant.Outlined)"
-                         Size="Size.Small"
-                         OnClick="@(() => SetSeverity(sev))"
-                         Style="min-width:36px;">
-                    @sev.ToString()
-                </MudChip>
-            }
+    <!-- Da / Ne + Risk level row -->
+    <div class="item-row">
+        <!-- Da / Ne toggles -->
+        <div class="item-answer-btns">
+            <button class="answer-btn @(Answer == AnswerState.Da ? "btn-da-active" : "btn-da")"
+                    @onclick="@(() => ToggleAnswer(AnswerState.Da))">
+                ✓ Да
+            </button>
+            <button class="answer-btn @(Answer == AnswerState.Ne ? "btn-ne-active" : "btn-ne")"
+                    @onclick="@(() => ToggleAnswer(AnswerState.Ne))">
+                ✗ Не
+            </button>
         </div>
 
-        <MudTextField @bind-Value="_noteText"
-                      Label="@(Item.NoteRequired ? "Напомена (обавезно)" : "Напомена")"
-                      Variant="Variant.Outlined"
-                      Lines="2"
-                      FullWidth="true"
-                      Error="@(Item.NoteRequired && string.IsNullOrWhiteSpace(_noteText))"
-                      Immediate="true"
-                      DebounceInterval="300"
-                      OnDebounceIntervalElapsed="SaveNote"
-                      Style="margin-top:8px;" />
+        <!-- Risk level checkboxes: N S V K -->
+        <div class="item-risk-btns">
+            @foreach (var (sev, label) in RiskOptions)
+            {
+                <button class="risk-btn risk-@sev.ToString().ToLower() @(CurrentSeverity == sev ? "risk-active-" + sev.ToString().ToLower() : "")"
+                        @onclick="@(() => SetSeverity(sev))">
+                    @label
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Note field: always shown when Ne, or when a note already exists -->
+    @if (Answer == AnswerState.Ne || !string.IsNullOrWhiteSpace(_noteText))
+    {
+        <textarea class="item-note @(Item.NoteRequired && Answer == AnswerState.Ne && string.IsNullOrWhiteSpace(_noteText) ? "item-note-required" : "")"
+                  placeholder="@(Item.NoteRequired ? "Напомена (обавезно)…" : "Напомена…")"
+                  rows="2"
+                  @bind="_noteText"
+                  @bind:event="oninput"
+                  @onchange="SaveNote"></textarea>
     }
+
 </div>
 
-<MudDivider />
+<hr class="item-divider" />
 
 @code {
     [Parameter] public ChecklistItemDefinition Item { get; set; } = null!;
@@ -64,6 +57,14 @@
     [Parameter] public EventCallback<string> OnNoteChanged { get; set; }
 
     private string _noteText = "";
+
+    private static readonly (CheckSeverity sev, string label)[] RiskOptions =
+    {
+        (CheckSeverity.N, "Низак"),
+        (CheckSeverity.S, "Средњи"),
+        (CheckSeverity.V, "Висок"),
+        (CheckSeverity.K, "Критичан"),
+    };
 
     protected override void OnParametersSet()
     {
@@ -82,8 +83,9 @@
         await OnSeverityChanged.InvokeAsync(newSev);
     }
 
-    private async Task SaveNote()
+    private async Task SaveNote(ChangeEventArgs e)
     {
+        _noteText = e.Value?.ToString() ?? "";
         await OnNoteChanged.InvokeAsync(_noteText);
     }
 
@@ -92,21 +94,5 @@
         AnswerState.Da => "item-da",
         AnswerState.Ne => "item-ne",
         _ => "item-unanswered"
-    };
-
-    private string GetAnswerLabel() => Answer switch
-    {
-        AnswerState.Da => "Да",
-        AnswerState.Ne => "Не",
-        _ => ""
-    };
-
-    private Color GetSeverityColor(CheckSeverity sev) => sev switch
-    {
-        CheckSeverity.N => Color.Success,
-        CheckSeverity.S => Color.Warning,
-        CheckSeverity.V => Color.Error,
-        CheckSeverity.K => Color.Dark,
-        _ => Color.Default
     };
 }

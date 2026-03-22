@@ -65,12 +65,6 @@ namespace PosmatraciApp.Services
             if (!_bmStates.TryGetValue(bmId, out var state)) return;
             state.Answers[itemId] = answer;
             state.LastModified = DateTime.UtcNow;
-            // Clear severity and note if resetting to unanswered or Da
-            if (answer != AnswerState.Ne)
-            {
-                state.Severities[itemId] = CheckSeverity.None;
-                state.Notes.Remove(itemId);
-            }
             MarkDirtyAndScheduleSave();
         }
 

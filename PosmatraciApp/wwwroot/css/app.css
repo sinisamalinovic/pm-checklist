@@ -4,43 +4,116 @@ html, body {
     padding: 0;
 }
 
-/* Checklist item styles */
+/* ── Checklist item ───────────────────────────────────── */
 .checklist-item {
-    padding: 10px 12px;
-    border-left: 4px solid transparent;
-    transition: border-color 0.2s;
+    padding: 10px 12px 8px;
+    border-left: 4px solid #e0e0e0;
+    transition: border-color 0.15s, background-color 0.15s;
 }
+.checklist-item.item-da  { border-left-color: #4caf50; background: #f6fff6; }
+.checklist-item.item-ne  { border-left-color: #f44336; background: #fff6f6; }
 
-.checklist-item.item-da {
-    border-left-color: #4caf50;
-    background-color: #f9fff9;
-}
+.item-text { margin-bottom: 6px; }
 
-.checklist-item.item-ne {
-    border-left-color: #f44336;
-    background-color: #fff9f9;
-}
-
-.checklist-item.item-unanswered {
-    border-left-color: #e0e0e0;
-}
-
-.item-text {
-    margin-bottom: 6px;
-}
-
-.item-controls {
+/* Row that holds Da/Ne + risk buttons side by side */
+.item-row {
     display: flex;
     align-items: center;
-    gap: 4px;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-.item-severity {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
-    flex-wrap: wrap;
+/* Da / Ne buttons */
+.item-answer-btns { display: flex; gap: 4px; }
+
+.answer-btn {
+    border: 1.5px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 52px;
+    min-height: 40px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
+.btn-da         { color: #4caf50; border-color: #a5d6a7; }
+.btn-da:hover   { background: #e8f5e9; }
+.btn-da-active  { background: #4caf50; color: #fff; border-color: #4caf50; }
+
+.btn-ne         { color: #f44336; border-color: #ef9a9a; }
+.btn-ne:hover   { background: #ffebee; }
+.btn-ne-active  { background: #f44336; color: #fff; border-color: #f44336; }
+
+/* Risk level buttons: N S V K */
+.item-risk-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.risk-btn {
+    border: 1.5px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 60px;
+    min-height: 40px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* Inactive colours (border tint) */
+.risk-n { color: #388e3c; border-color: #a5d6a7; }
+.risk-s { color: #f57c00; border-color: #ffcc80; }
+.risk-v { color: #d32f2f; border-color: #ef9a9a; }
+.risk-k { color: #4a148c; border-color: #ce93d8; }
+
+/* Active / selected colours */
+.risk-active-n { background: #388e3c; color: #fff; border-color: #388e3c; }
+.risk-active-s { background: #f57c00; color: #fff; border-color: #f57c00; }
+.risk-active-v { background: #d32f2f; color: #fff; border-color: #d32f2f; }
+.risk-active-k { background: #4a148c; color: #fff; border-color: #4a148c; }
+
+/* Note textarea */
+.item-note {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+.item-note:focus        { outline: none; border-color: #1976d2; }
+.item-note-required     { border-color: #f44336; }
+.item-note-required:focus { border-color: #f44336; }
+
+.item-divider { border: none; border-top: 1px solid #eee; margin: 0; }
+
+/* ── Send / Share button ──────────────────────────────── */
+.send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.15s;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.3);
+}
+.send-btn:active { background: #1565c0; }
 
 h1:focus {
     outline: none;

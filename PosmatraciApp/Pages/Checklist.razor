@@ -87,13 +87,17 @@
 </div>
 
 <!-- Sticky Bottom Bar -->
-<div style="position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:white;border-top:1px solid #eee;z-index:900;display:flex;gap:8px;">
-    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-               FullWidth="true" Size="Size.Large"
-               StartIcon="@Icons.Material.Filled.QrCode2"
-               OnClick="ShowQr">
-        Генериши QR
-    </MudButton>
+<div style="position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:white;border-top:1px solid #eee;z-index:900;">
+    <button class="send-btn" @onclick="SendQr" disabled="@_sending">
+        @if (_sending)
+        {
+            <span>⏳</span><span>Генерисање…</span>
+        }
+        else
+        {
+            <span>📤</span><span>Пошаљи извештај</span>
+        }
+    </button>
 </div>
 
 <!-- QR Dialog -->
@@ -148,6 +152,7 @@
     private bool _qrDialogOpen;
     private string _qrBase64 = "";
     private List<string> _validationWarnings = new();
+    private bool _sending;
 
     protected override void OnParametersSet()
     {
@@ -210,30 +215,46 @@
         Nav.NavigateTo("/login");
     }
 
-    private void ShowQr()
+    /// <summary>
+    /// Generates QR and immediately opens the native phone share sheet (Viber, WhatsApp, etc.).
+    /// Falls back to the QR dialog if Web Share API is unavailable.
+    /// </summary>
+    private async Task SendQr()
     {
-        if (_state == null) return;
+        if (_state == null || _sending) return;
+        _sending = true;
+        StateHasChanged();
 
-        _validationWarnings = new List<string>();
-        foreach (var sect in ChecklistService.Sections)
-        {
-            foreach (var item in sect.Items)
-            {
-                if (item.NoteRequired
-                    && item.Id < _state.Answers.Length
-                    && _state.Answers[item.Id] == AnswerState.Ne
-                    && (!_state.Notes.TryGetValue(item.Id, out var n) || string.IsNullOrWhiteSpace(n)))
-                {
-                    _validationWarnings.Add(item.Text.Length > 60
-                        ? item.Text[..60] + "…"
-                        : item.Text);
-                }
-            }
-        }
+        BuildValidationWarnings();
 
         var payload = QrEncoder.EncodeToBase64Url(_state, AuthService.CurrentSession!.EmailHash);
         _qrBase64 = QrEncoder.GenerateQrPngBase64(payload);
-        _qrDialogOpen = true;
+        await ChecklistService.SaveAllAsync();
+
+        // Try native share sheet first (Viber, WhatsApp, Telegram, email, etc.)
+        var shared = await JS.InvokeAsync<bool>("shareQrCode", _qrBase64, _state.BmDisplayName);
+
+        _sending = false;
+
+        if (!shared)
+        {
+            // Web Share not supported on this device/browser — show QR dialog instead
+            _qrDialogOpen = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private void BuildValidationWarnings()
+    {
+        _validationWarnings = new List<string>();
+        foreach (var sect in ChecklistService.Sections)
+            foreach (var item in sect.Items)
+                if (item.NoteRequired
+                    && item.Id < _state!.Answers.Length
+                    && _state.Answers[item.Id] == AnswerState.Ne
+                    && (!_state.Notes.TryGetValue(item.Id, out var n) || string.IsNullOrWhiteSpace(n)))
+                    _validationWarnings.Add(item.Text.Length > 60 ? item.Text[..60] + "…" : item.Text);
     }
 
     private async Task ShareQr()
