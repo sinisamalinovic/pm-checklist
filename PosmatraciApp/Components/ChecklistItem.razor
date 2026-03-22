@@ -1,0 +1,112 @@
+@using PosmatraciApp.Models
+
+<div class="checklist-item @GetStateClass()">
+    <div class="item-text">
+        <MudText Typo="Typo.body2">@Item.Text</MudText>
+    </div>
+
+    <div class="item-controls">
+        <MudIconButton Icon="@Icons.Material.Filled.CheckCircle"
+                       Color="@(Answer == AnswerState.Da ? Color.Success : Color.Default)"
+                       Size="Size.Medium"
+                       OnClick="@(() => ToggleAnswer(AnswerState.Da))"
+                       Style="min-width:44px;min-height:44px;" />
+
+        <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                       Color="@(Answer == AnswerState.Ne ? Color.Error : Color.Default)"
+                       Size="Size.Medium"
+                       OnClick="@(() => ToggleAnswer(AnswerState.Ne))"
+                       Style="min-width:44px;min-height:44px;" />
+
+        <MudText Typo="Typo.caption" Style="line-height:44px;color:#999;padding-left:4px;">
+            @GetAnswerLabel()
+        </MudText>
+    </div>
+
+    @if (Answer == AnswerState.Ne)
+    {
+        <div class="item-severity">
+            @foreach (var sev in new[] { CheckSeverity.N, CheckSeverity.S, CheckSeverity.V, CheckSeverity.K })
+            {
+                <MudChip T="string"
+                         Color="@GetSeverityColor(sev)"
+                         Variant="@(CurrentSeverity == sev ? Variant.Filled : Variant.Outlined)"
+                         Size="Size.Small"
+                         OnClick="@(() => SetSeverity(sev))"
+                         Style="min-width:36px;">
+                    @sev.ToString()
+                </MudChip>
+            }
+        </div>
+
+        <MudTextField @bind-Value="_noteText"
+                      Label="@(Item.NoteRequired ? "Напомена (обавезно)" : "Напомена")"
+                      Variant="Variant.Outlined"
+                      Lines="2"
+                      FullWidth="true"
+                      Error="@(Item.NoteRequired && string.IsNullOrWhiteSpace(_noteText))"
+                      Immediate="true"
+                      DebounceInterval="300"
+                      OnDebounceIntervalElapsed="SaveNote"
+                      Style="margin-top:8px;" />
+    }
+</div>
+
+<MudDivider />
+
+@code {
+    [Parameter] public ChecklistItemDefinition Item { get; set; } = null!;
+    [Parameter] public AnswerState Answer { get; set; }
+    [Parameter] public CheckSeverity CurrentSeverity { get; set; }
+    [Parameter] public string Note { get; set; } = "";
+    [Parameter] public EventCallback<AnswerState> OnAnswerChanged { get; set; }
+    [Parameter] public EventCallback<CheckSeverity> OnSeverityChanged { get; set; }
+    [Parameter] public EventCallback<string> OnNoteChanged { get; set; }
+
+    private string _noteText = "";
+
+    protected override void OnParametersSet()
+    {
+        _noteText = Note;
+    }
+
+    private async Task ToggleAnswer(AnswerState clicked)
+    {
+        var newAnswer = Answer == clicked ? AnswerState.Unanswered : clicked;
+        await OnAnswerChanged.InvokeAsync(newAnswer);
+    }
+
+    private async Task SetSeverity(CheckSeverity sev)
+    {
+        var newSev = CurrentSeverity == sev ? CheckSeverity.None : sev;
+        await OnSeverityChanged.InvokeAsync(newSev);
+    }
+
+    private async Task SaveNote()
+    {
+        await OnNoteChanged.InvokeAsync(_noteText);
+    }
+
+    private string GetStateClass() => Answer switch
+    {
+        AnswerState.Da => "item-da",
+        AnswerState.Ne => "item-ne",
+        _ => "item-unanswered"
+    };
+
+    private string GetAnswerLabel() => Answer switch
+    {
+        AnswerState.Da => "Да",
+        AnswerState.Ne => "Не",
+        _ => ""
+    };
+
+    private Color GetSeverityColor(CheckSeverity sev) => sev switch
+    {
+        CheckSeverity.N => Color.Success,
+        CheckSeverity.S => Color.Warning,
+        CheckSeverity.V => Color.Error,
+        CheckSeverity.K => Color.Dark,
+        _ => Color.Default
+    };
+}
